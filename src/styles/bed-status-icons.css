@@ -1,0 +1,38 @@
+.bedStatusVisual {
+  height: 58px;
+  margin: 8px 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #eef8f4;
+}
+
+.bedStatusVisual img {
+  width: 45px;
+  height: 45px;
+  object-fit: contain;
+  opacity: 0.72;
+}
+
+.bedCard.available .bedStatusVisual img {
+  filter: invert(47%) sepia(23%) saturate(1192%) hue-rotate(108deg)
+    brightness(91%) contrast(86%);
+}
+
+.bedCard.occupied .bedStatusVisual {
+  background: #fde5e5;
+}
+
+.bedCard.occupied .bedStatusVisual img {
+  filter: invert(29%) sepia(83%) saturate(1700%) hue-rotate(340deg)
+    brightness(86%) contrast(91%);
+}
+
+.bedCard.maintenance .bedStatusVisual {
+  background: #f8eded;
+}
+
+.bedCard.maintenance .bedStatusVisual img {
+  filter: invert(41%) sepia(14%) saturate(1350%) hue-rotate(304deg)
+    brightness(89%) contrast(87%);
+}

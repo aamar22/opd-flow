@@ -1,0 +1,239 @@
+.revenuePanel {
+  padding-bottom: 18px;
+}
+.revenueFilters {
+  display: flex;
+  gap: 5px;
+  text-transform: capitalize;
+}
+.revenueFilters button {
+  border: 1px solid #d7e3ea;
+  background: #fff;
+  color: #607387;
+  border-radius: 5px;
+  padding: 6px 10px;
+  font: 600 11px "DM Sans";
+  cursor: pointer;
+}
+.revenueFilters button.active {
+  background: #e1f5ef;
+  border-color: #9fd8d0;
+  color: #087f78;
+}
+.revenueSummary {
+  display: flex;
+  gap: 42px;
+  padding: 0 22px 12px;
+}
+.revenueSummary span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+}
+.revenueSummary strong {
+  display: block;
+  margin-top: 3px;
+  font: 700 23px Manrope;
+  color: #137f78;
+}
+.revenueSummary small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.revenueSummary .pharmacyRevenue {
+  color: #6655b5;
+}
+.revenueSummary .ipdRevenue {
+  color: #e18a24;
+}
+.revenueLegend {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  padding: 0 22px 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.revenueLegend .chartTypeFilters {
+  display: flex;
+  gap: 5px;
+  margin-right: auto;
+}
+.chartTypeFilters button {
+  border: 1px solid #d7e3ea;
+  background: #fff;
+  color: #607387;
+  border-radius: 5px;
+  padding: 6px 10px;
+  font: 600 11px "DM Sans";
+  text-transform: capitalize;
+  cursor: pointer;
+}
+.chartTypeFilters button.active {
+  background: #eef0fb;
+  border-color: #bbb4e3;
+  color: #5848a4;
+}
+.revenueLegend span { display: flex; align-items: center; gap: 5px; }
+.revenueLegend i { width: 9px; height: 9px; border-radius: 2px; }
+.opdLegend, .opdBar { background: linear-gradient(#29b7aa, #137f78); }
+.pharmacyLegend, .pharmacyBar { background: linear-gradient(#9284d9, #6655b5); }
+.ipdLegend, .ipdBar { background: linear-gradient(#f0ab52, #e18a24); }
+.revenueChart {
+  height: 210px;
+  display: flex;
+  align-items: end;
+  gap: 5px;
+  padding: 12px 22px 0;
+  border-top: 1px solid var(--line);
+  overflow-x: auto;
+}
+.revenueBar {
+  height: 175px;
+  min-width: 22px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+  align-items: center;
+  gap: 6px;
+}
+.revenueBarPair {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 2px;
+}
+.revenueBarPair i {
+  display: block;
+  width: calc(33.333% - 2px);
+  min-height: 3px;
+  border-radius: 4px 4px 0 0;
+}
+.revenueBar small {
+  font-size: 9px;
+  color: #718092;
+}
+.revenueLineChart {
+  height: 230px;
+  padding: 12px 22px 0;
+  border-top: 1px solid var(--line);
+  overflow-x: auto;
+}
+.revenueLineChart svg {
+  display: block;
+  width: 100%;
+  min-width: 650px;
+  height: 185px;
+}
+.revenueLineChart polyline {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.chartAxis { stroke: #dce4e9; stroke-width: 1; }
+.opdLine { stroke: #168a82; }
+.pharmacyLine { stroke: #6655b5; }
+.ipdLine { stroke: #e18a24; }
+.lineLabels {
+  min-width: 650px;
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  color: #718092;
+}
+.lineLabels small { font-size: 9px; }
+.revenuePieChart {
+  min-height: 245px;
+  padding: 20px 22px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+}
+.revenuePie {
+  width: 185px;
+  height: 185px;
+  flex: 0 0 185px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.revenuePie > div {
+  width: 105px;
+  height: 105px;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+.revenuePie strong { font: 700 17px Manrope; }
+.revenuePie small { color: var(--muted); }
+.pieDetails { min-width: 220px; }
+.pieDetails p {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.pieDetails i { width: 10px; height: 10px; border-radius: 2px; }
+.pieDetails span { color: var(--muted); font-size: 11px; }
+.pieDetails span strong { display: block; color: var(--ink); font-size: 14px; }
+.pieDetails b { font-size: 13px; }
+@media (max-width: 560px) {
+  .revenueFilters {
+    margin-top: 10px;
+  }
+  .panelHead {
+    align-items: flex-start;
+  }
+  .revenueSummary {
+    gap: 22px;
+  }
+  .revenueChart {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .revenueLegend { align-items: flex-start; flex-wrap: wrap; }
+  .revenueLegend .chartTypeFilters { width: 100%; }
+  .revenuePieChart { flex-direction: column; gap: 16px; }
+  .revenueBar {
+    min-width: 27px;
+  }
+}
+.bedAvailabilityCounts { display: grid; grid-template-columns: repeat(4, minmax(125px, 1fr)) minmax(250px, 1.7fr); gap: 16px; padding: 4px 22px 22px; }
+.bedAvailabilityCounts > div { aspect-ratio: 1; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 20px; border: 1px solid var(--line); border-radius: 12px; }
+.bedAvailabilityCounts > div > span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; color: #fff; font-size: 18px; }
+.bedAvailabilityCounts small { display: block; color: var(--muted); font-size: 11px; }
+.bedAvailabilityCounts strong { display: block; margin-top: 3px; font: 700 28px Manrope; }
+.availableBedCount { background: #f3fbf6; }
+.totalBedCount { background: #f2f7fb; }
+.totalBedCount > span { background: #2677a7; }
+.totalBedCount strong { color: #2677a7; }
+.availableBedCount > span { background: #168d45; }
+.availableBedCount strong { color: #168d45; }
+.occupiedBedCount { background: #fff3f3; }
+.occupiedBedCount > span { background: #c93636; }
+.occupiedBedCount strong { color: #c93636; }
+.maintenanceBedCount { background: #fff8ec; }
+.maintenanceBedCount > span { background: #b87818; }
+.maintenanceBedCount strong { color: #a96b0e; }
+.bedAvailabilityCounts > .occupancyPercentage { aspect-ratio: auto; display: block; align-self: stretch; min-height: 150px; margin: 0; padding: 18px 20px; border: 1px solid #efc4c4; border-radius: 10px; background: #fff7f7; }
+.occupancyPercentage > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.occupancyPercentage span { color: #765252; font-weight: 600; }
+.occupancyPercentage strong { color: #c93636; font: 700 26px Manrope; }
+.occupancyPercentage small { display: block; margin-top: 7px; color: var(--muted); font-size: 10px; }
+.occupancyTrack { height: 10px; margin-top: 10px; overflow: hidden; border-radius: 6px; background: #f0dddd; }
+.occupancyTrack i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#df6868,#b92828); transition: width .3s ease; }
+@media (max-width: 1100px) { .bedAvailabilityCounts { grid-template-columns: repeat(4, minmax(120px, 1fr)); } .bedAvailabilityCounts > .occupancyPercentage { grid-column: 1 / -1; min-height: auto; } }
+@media (max-width: 650px) { .bedAvailabilityCounts { grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); padding: 4px 12px 14px; } .bedAvailabilityCounts > .occupancyPercentage { grid-column: 1 / -1; } }

@@ -1,0 +1,85 @@
+.billingWorkspace {
+  max-width: 1250px;
+}
+.billingGrid {
+  display: grid;
+  grid-template-columns: minmax(480px, 1.2fr) minmax(360px, 0.8fr);
+  gap: 18px;
+}
+.billingGrid .masterCard {
+  margin: 0;
+}
+.billingPatient {
+  background: #edf8f6;
+  border-radius: 6px;
+  padding: 9px 11px;
+  font-size: 12px;
+}
+.quantityInput {
+  width: 58px;
+  margin: 0;
+  padding: 5px;
+}
+.billingTotals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: end;
+  border-top: 1px solid var(--line);
+  margin-top: 15px;
+  padding-top: 14px;
+}
+.billingTotals label {
+  margin: 0;
+}
+.billingTotals p {
+  margin: 0;
+  text-align: right;
+  line-height: 1.8;
+}
+.billingTotals strong {
+  font-size: 18px;
+  color: #137f78;
+}
+@media (max-width: 850px) {
+  .billingGrid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 500px) {
+  .billingTotals {
+    grid-template-columns: 1fr;
+  }
+  .billingTotals p {
+    text-align: left;
+  }
+}
+.ipdBillPatient {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; border: 0; border-top: 1px solid var(--line); background: #fff;
+  color: var(--ink); padding: 13px 5px; text-align: left; cursor: pointer;
+}
+.ipdBillPatient.active, .ipdBillPatient:hover { background: #f1faf8; }
+.ipdBillPatient small, .ipdBillPatient div > span { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
+.doctorChargeForm { margin: 16px 0; padding: 14px; border: 1px solid var(--line); border-radius: 7px; background: #fafcfd; }
+.doctorChargeForm h4 { margin: 0 0 12px; font: 700 13px Manrope; }
+.doctorChargeForm label { margin-bottom: 9px; }
+.advancePaymentForm { margin: 16px 0; padding: 14px; border: 1px solid #c9dfd9; border-radius: 7px; background: #f4fbf9; }
+.advancePaymentForm h4, .advanceLedger h4 { margin: 0 0 12px; font: 700 13px Manrope; }
+.advancePaymentForm label { margin-bottom: 9px; }
+.advanceLedger { margin: 14px 0; padding: 13px; border: 1px solid var(--line); border-radius: 7px; }
+.advanceLedger > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+.advanceLedger span { color: var(--muted); font-size: 10px; }
+.advanceLedger b { color: #137f78; white-space: nowrap; }
+.ipdBillDetail table { margin-top: 16px; }
+.ipdBillingNote { padding: 10px; border-radius: 6px; background: #fff7e8; color: #8a681e; font-size: 11px; }
+.appliedBillingRule { margin: 14px 0 0; padding: 9px 11px; border-radius: 6px; background: #eef6fb; color: #436578; font-size: 11px; }
+.notice {
+  position: fixed;
+  z-index: 100;
+  top: 22px;
+  right: 26px;
+  max-width: min(420px, calc(100vw - 40px));
+  margin: 0;
+  box-shadow: 0 8px 24px #15283a26;
+}
