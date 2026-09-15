@@ -7,14 +7,16 @@ const blank = {
   discount: "",
   paymentMode: "Cash",
 };
-export default function BillingPage({ onComplete }) {
+export default function BillingPage({ onComplete, clinicSettings }) {
+  const [downloading, setDownloading] = useState(null);
+  const [pdfError, setPdfError] = useState("");
   const [form, setForm] = useState(blank);
   const [services, setServices] = useState([]);
   const [patients, setPatients] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const loadInvoices = () =>
     invoiceApi
-      .getPage({ page: 1, limit: 8 })
+      .getPage({ page: 1, limit: 8, invoiceType: "Service" })
       .then(({ data }) => setInvoices(data.items));
   useEffect(() => {
     serviceApi.getAll({ active: true }).then(({ data }) => setServices(data));
@@ -59,6 +61,21 @@ export default function BillingPage({ onComplete }) {
             },
           ],
     });
+  };
+  const downloadPdf = async (invoice) => {
+    setDownloading(invoice._id);
+    setPdfError("");
+    try {
+      const { data } = await patientApi.getPage({ patientId: invoice.patientId, limit: 1 });
+      const patient = data.items.find((item) => String(item._id) === String(invoice.patientId) || item.patientId === invoice.patientId);
+      if (!patient) throw new Error("Patient not found");
+      const { downloadPatientBill } = await import("../../utils/downloadPatientBill.mjs");
+      await downloadPatientBill({ invoice, patient, clinicSettings });
+    } catch {
+      setPdfError("Could not download the patient bill. Please try again.");
+    } finally {
+      setDownloading(null);
+    }
   };
   const save = async () => {
     if (!form.patient || !form.items.length) return;
@@ -225,6 +242,7 @@ export default function BillingPage({ onComplete }) {
         </section>
         <section className="masterCard">
           <h3>Recent bills</h3>
+          {pdfError && <p role="alert">{pdfError}</p>}
           <table>
             <thead>
               <tr>
@@ -232,6 +250,7 @@ export default function BillingPage({ onComplete }) {
                 <th>Patient</th>
                 <th>Total</th>
                 <th>Payment</th>
+                <th>PDF</th>
               </tr>
             </thead>
             <tbody>
@@ -244,11 +263,12 @@ export default function BillingPage({ onComplete }) {
                   </td>
                   <td>₹{invoice.total}</td>
                   <td>{invoice.paymentMode}</td>
+                  <td><button type="button" className="textButton" disabled={downloading !== null} onClick={() => downloadPdf(invoice)} aria-label={`Download PDF for ${invoice.invoiceNumber}`}>{downloading === invoice._id ? "Preparing..." : "Download PDF"}</button></td>
                 </tr>
               ))}
               {!invoices.length && (
                 <tr>
-                  <td className="empty" colSpan="4">
+                  <td className="empty" colSpan="5">
                     No bills created.
                   </td>
                 </tr>
