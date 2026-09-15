@@ -4,6 +4,7 @@ import { Field, FormCard, Select } from "../../components/common/FormFields";
 const initialForm = {
   name: "",
   age: "",
+  dateOfBirth: "",
   gender: "Female",
   phone: "",
   address: "",
@@ -44,6 +45,12 @@ export default function PatientRegistrationPage({ onComplete }) {
           options={["Female", "Male", "Other"]}
         />
       </div>
+      <Field
+        label="Date of birth (optional, for growth charts)"
+        type="date"
+        value={form.dateOfBirth}
+        onChange={set("dateOfBirth")}
+      />
       <Field
         label="Phone number"
         value={form.phone}

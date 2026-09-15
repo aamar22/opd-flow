@@ -188,7 +188,7 @@ export default function BillingPage({ onComplete }) {
           </table>
           <div className="billingTotals">
             <label>
-              Discount
+             Amount to be Discount
               <input
                 type="number"
                 min="0"

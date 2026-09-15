@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || " http://localhost:5000/api",
+  baseURL: import.meta.env.VITE_API_URL || "https://w9wngclh-5000.inc1.devtunnels.ms/api",
 });
 
 const list = (path, params) => api.get(path, { params });
@@ -31,6 +31,7 @@ export const appointmentApi = {
   update: (id, payload) => api.patch(`/appointments/${id}`, payload),
 };
 export const clinicSettingsApi = {
+  updateModules: (modules) => api.put("/clinic-settings/modules", { modules }),
   get: () => api.get("/clinic-settings"),
   update: (payload) => api.put("/clinic-settings", payload),
   getAvailability: (params) => list("/clinic-settings/availability", params),

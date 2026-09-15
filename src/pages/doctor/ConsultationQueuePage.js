@@ -1,5 +1,9 @@
+import ImmunizationRecords from "../../components/doctor/ImmunizationRecords";
+import { isGrowthEligible, matchesPatient } from "../../utils/growth.mjs";
 import { useEffect, useState } from "react";
-import { visitApi } from "../../services/api";
+import { visitApi, patientApi } from "../../services/api";
+import PatientGrowthChart from "../../components/doctor/PatientGrowthChart";
+import ConsultationAIFeatures from "../../components/doctor/ConsultationAIFeatures";
 import Pagination from "../../components/common/Pagination";
 import { printPrescription } from "../../utils/printPrescription";
 
@@ -13,6 +17,12 @@ const emptyForm = {
   respiratoryRate: "",
   spo2: "",
   weight: "",
+  height: "",
+  headCircumference: "",
+  growthAgeMonths: "",
+  growthZScore: "",
+  growthReference: "",
+  growthMetric: "weight",
   chiefComplaint: "",
   chiefComplaints: [],
   allergy: "",
@@ -27,7 +37,7 @@ const emptyForm = {
   medicineEntries: [],
   vitalHistory: [],
 };
-const vitalFields = [
+const baseVitalFields = [
   ["temperature", "Temperature °F"],
   ["pulse", "Pulse bpm"],
   ["systolic", "BP systolic"],
@@ -38,6 +48,9 @@ const vitalFields = [
 ];
 
 export default function ConsultationQueuePage({ onComplete, clinicSettings }) {
+  const [growthError, setGrowthError] = useState("");
+  const [patientLookupError, setPatientLookupError] = useState("");
+  const [patient, setPatient] = useState(null);
   const [active, setActive] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [visits, setVisits] = useState([]);
@@ -69,9 +82,63 @@ export default function ConsultationQueuePage({ onComplete, clinicSettings }) {
         );
   }, [active]);
 
+  const growthEligible =
+    matchesPatient(patient, active?.patientId) && isGrowthEligible(patient);
+  const vitalFields = [
+    ...baseVitalFields,
+    ...(growthEligible
+      ? [
+          ["height", "Height / length (cm)"],
+          ["headCircumference", "Head circumference (cm)"],
+          ["growthAgeMonths", "Age at reading (months)"],
+          ["growthZScore", "Verified Z-score (optional)"],
+          ["growthReference", "Z-score reference / source"],
+        ]
+      : []),
+  ];
+  useEffect(() => {
+    let cancelled = false;
+    setPatient(null);
+    setPatientLookupError("");
+    if (active)
+      patientApi
+        .getPage({
+          patientId: active.patientId,
+          search: active.patientId,
+          limit: 100,
+        })
+        .then(({ data }) => {
+          if (
+            !cancelled &&
+            !data.items.some((item) => matchesPatient(item, active.patientId))
+          )
+            setPatientLookupError(
+              "Patient age could not be found. Growth charts require a linked patient aged 6 or younger.",
+            );
+          if (!cancelled)
+            setPatient(
+              data.items.find((item) =>
+                matchesPatient(item, active.patientId),
+              ) || null,
+            );
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setPatient(null);
+            setPatientLookupError(
+              "Could not load patient age. Reopen the patient record to retry loading growth charts.",
+            );
+          }
+        });
+    return () => {
+      cancelled = true;
+    };
+  }, [active]);
+
   const set = (name) => (value) =>
     setForm((current) => ({ ...current, [name]: value }));
   const selectPatient = (visit) => {
+    setGrowthError("");
     setActive(visit);
     setSection("Vitals");
     setForm({
@@ -129,6 +196,36 @@ export default function ConsultationQueuePage({ onComplete, clinicSettings }) {
     }));
   };
   const addVitalReading = () => {
+    setGrowthError("");
+    if (growthEligible) {
+      if (
+        ["height", "headCircumference", "weight"].some(
+          (key) =>
+            form[key] !== "" &&
+            (!Number.isFinite(Number(form[key])) || Number(form[key]) <= 0),
+        )
+      ) {
+        setGrowthError("Growth measurements must be positive numbers.");
+        return;
+      }
+      if (
+        form.growthAgeMonths !== "" &&
+        (!Number.isFinite(Number(form.growthAgeMonths)) ||
+          Number(form.growthAgeMonths) < 0 ||
+          Number(form.growthAgeMonths) >= 84)
+      ) {
+        setGrowthError("Enter an age from 0 to less than 84 months.");
+        return;
+      }
+      if (
+        form.growthZScore !== "" &&
+        (!Number.isFinite(Number(form.growthZScore)) ||
+          !form.growthReference.trim())
+      ) {
+        setGrowthError("Enter a numeric Z-score and its reference/source.");
+        return;
+      }
+    }
     const reading = Object.fromEntries(
       vitalFields.map(([name]) => [name, form[name]]),
     );
@@ -137,7 +234,11 @@ export default function ConsultationQueuePage({ onComplete, clinicSettings }) {
       ...current,
       vitalHistory: [
         ...current.vitalHistory,
-        { ...reading, recordedAt: new Date().toISOString() },
+        {
+          ...reading,
+          growthMetric: current.growthMetric,
+          recordedAt: new Date().toISOString(),
+        },
       ],
     }));
   };
@@ -147,7 +248,7 @@ export default function ConsultationQueuePage({ onComplete, clinicSettings }) {
     );
     await visitApi.update(active._id, {
       status: "Completed",
-      vitals: latestVitals,
+      vitals: { ...latestVitals, growthMetric: form.growthMetric },
       vitalHistory: form.vitalHistory,
       chiefComplaint: form.chiefComplaints.join("; ") || form.chiefComplaint,
       chiefComplaints: form.chiefComplaints,
@@ -347,302 +448,550 @@ export default function ConsultationQueuePage({ onComplete, clinicSettings }) {
                 </p>
               </div>
               <div className="visitFullActions">
+                <button
+                  type="button"
+                  className="visitBack"
+                  aria-pressed={section === "AI Features"}
+                  onClick={() => setSection("AI Features")}
+                >
+                  AI Features
+                </button>
                 <button className="visitBack" onClick={() => setActive(null)}>
                   ← Back to queue
                 </button>
                 <span className="badge waiting">In consultation</span>
               </div>
             </div>
-            <nav className="opdSteps">
-              {["Vitals", "Clinical notes", "Medication", "Visit history"].map(
-                (item) => (
+            <div className="patientRecordLayout">
+              <nav
+                className="patientRecordSidebar"
+                aria-label="Patient record tools"
+              >
+                {growthEligible && (
                   <button
-                    className={section === item ? "active" : ""}
-                    onClick={() => setSection(item)}
-                    key={item}
-                  >
-                    {item}
-                  </button>
-                ),
-              )}
-            </nav>
-            <div className="opdContent">
-              {section === "Vitals" && (
-                <section className="opdSection">
-                  <h3>
-                    Vitals <span>Record current measurements</span>
-                  </h3>
-                  <div className="vitalsGrid">
-                    {vitalFields.map(([name, label]) => (
-                      <label key={name}>
-                        {label}
-                        <input
-                          value={form[name]}
-                          onChange={(event) => set(name)(event.target.value)}
-                          inputMode="decimal"
-                        />
-                      </label>
-                    ))}
-                  </div>
-                  <button
-                    className="outlineButton addEntryButton"
                     type="button"
-                    onClick={addVitalReading}
+                    title="Growth Chart"
+                    className={section === "Growth Chart" ? "active" : ""}
+                    aria-pressed={section === "Growth Chart"}
+                    onClick={() => setSection("Growth Chart")}
                   >
-                    Add vital reading
+                    <svg
+                      width="26"
+                      height="26"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 3v18h18M7 15l4-5 4 3 6-8" />
+                      <path d="M17 5h4v4" />
+                    </svg>
+                    <span>Growth Chart</span>
                   </button>
-                  {!!form.vitalHistory.length && (
-                    <div className="entryList">
-                      {form.vitalHistory.map((vital, index) => (
-                        <span key={index}>
-                          Reading {index + 1}: {vital.temperature || "—"}°F ·
-                          Pulse {vital.pulse || "—"} · BP{" "}
-                          {vital.systolic || "—"}/{vital.diastolic || "—"}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              )}
-              {section === "Clinical notes" && (
-                <section className="opdSection">
-                  <h3>Clinical assessment</h3>
-                  <div className="clinicalGrid">
-                    <label>
-                      Chief complaint
-                      <div className="entryInput">
-                        <textarea
-                          value={form.chiefComplaint}
-                          onChange={(event) =>
-                            set("chiefComplaint")(event.target.value)
-                          }
-                        />
-                        <button
-                          className="outlineButton"
-                          type="button"
-                          onClick={() =>
-                            addTextEntry("chiefComplaint", "chiefComplaints")
-                          }
-                        >
-                          Add
-                        </button>
-                      </div>
-                      <div className="entryList">
-                        {form.chiefComplaints.map((item, index) => (
-                          <span key={index}>
-                            {item}
-                            <button
-                              type="button"
-                              onClick={() =>
-                                removeEntry("chiefComplaints", index)
-                              }
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </label>
-                    <label>
-                      Diagnosis
-                      <div className="entryInput">
-                        <textarea
-                          value={form.diagnosis}
-                          onChange={(event) =>
-                            set("diagnosis")(event.target.value)
-                          }
-                        />
-                        <button
-                          className="outlineButton"
-                          type="button"
-                          onClick={() => addTextEntry("diagnosis", "diagnoses")}
-                        >
-                          Add
-                        </button>
-                      </div>
-                      <div className="entryList">
-                        {form.diagnoses.map((item, index) => (
-                          <span key={index}>
-                            {item}
-                            <button
-                              type="button"
-                              onClick={() => removeEntry("diagnoses", index)}
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </label>
-                    <label>
-                      Allergies
-                      <div className="allergyEntry">
-                        <input
-                          value={form.allergy}
-                          onChange={(event) =>
-                            set("allergy")(event.target.value)
-                          }
-                          onKeyDown={(event) =>
-                            event.key === "Enter" &&
-                            (event.preventDefault(), addAllergy())
-                          }
-                          placeholder="Add allergy"
-                        />
-                        <button
-                          className="outlineButton"
-                          type="button"
-                          onClick={addAllergy}
-                        >
-                          Add
-                        </button>
-                      </div>
-                      <div className="allergyChips">
-                        {form.allergies.map((allergy) => (
-                          <span className="allergyChip" key={allergy}>
-                            {allergy}
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setForm((current) => ({
-                                  ...current,
-                                  allergies: current.allergies.filter(
-                                    (item) => item !== allergy,
-                                  ),
-                                }))
-                              }
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </label>
-                    <label>
-                      Clinical notes
-                      <div className="entryInput">
-                        <textarea
-                          value={form.notes}
-                          onChange={(event) => set("notes")(event.target.value)}
-                        />
-                        <button
-                          className="outlineButton"
-                          type="button"
-                          onClick={() => addTextEntry("notes", "clinicalNotes")}
-                        >
-                          Add
-                        </button>
-                      </div>
-                      <div className="entryList">
-                        {form.clinicalNotes.map((item, index) => (
-                          <span key={index}>
-                            {item}
-                            <button
-                              type="button"
-                              onClick={() =>
-                                removeEntry("clinicalNotes", index)
-                              }
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </label>
-                  </div>
-                </section>
-              )}
-              {section === "Medication" && (
-                <section className="opdSection">
-                  <h3>Medication</h3>
-                  <div className="medicineGrid">
-                    <label>
-                      Medicine name
-                      <input
-                        value={form.medicine}
-                        onChange={(event) =>
-                          set("medicine")(event.target.value)
-                        }
-                        placeholder="e.g. Paracetamol 500mg"
-                      />
-                    </label>
-                    <label>
-                      Dosage
-                      <input
-                        value={form.dosage}
-                        onChange={(event) => set("dosage")(event.target.value)}
-                        placeholder="e.g. 1 tablet twice daily"
-                      />
-                    </label>
-                    <label>
-                      Days
-                      <input
-                        type="number"
-                        min="1"
-                        value={form.days}
-                        onChange={(event) => set("days")(event.target.value)}
-                      />
-                    </label>
-                  </div>
-                  <button
-                    className="outlineButton addEntryButton"
-                    type="button"
-                    onClick={addMedication}
-                  >
-                    Add medication
-                  </button>
-                  <div className="entryList">
-                    {form.medicineEntries.map((medicine, index) => (
-                      <span key={index}>
-                        {medicine.name} · {medicine.dosage || "No dosage"} ·{" "}
-                        {medicine.days} day(s)
-                        <button
-                          type="button"
-                          onClick={() => removeEntry("medicineEntries", index)}
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </section>
-              )}
-              {section === "Visit history" && (
-                <section className="opdSection">
-                  <h3>Recent visit history</h3>
-                  <div className="visitHistory">
-                    {history.length ? (
-                      history.map((visit) => (
-                        <div className="visitHistoryItem" key={visit._id}>
-                          <b>
-                            {visit.diagnosis ||
-                              visit.chiefComplaint ||
-                              visit.symptoms}
-                          </b>
-                          <small>
-                            {new Date(visit.createdAt).toLocaleDateString()} ·{" "}
-                            {visit.status} · {visit.doctor}
-                          </small>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="empty">No earlier visits recorded.</div>
-                    )}
-                  </div>
-                </section>
-              )}
-              <div className="consultActions">
+                )}
                 <button
-                  className="outlineButton"
-                  onClick={() => selectPatient(active)}
+                  type="button"
+                  title="Immunization Records"
+                  className={section === "Immunization Records" ? "active" : ""}
+                  aria-pressed={section === "Immunization Records"}
+                  onClick={() => setSection("Immunization Records")}
                 >
-                  Reset
+                  <svg
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m18 2 4 4M17 7l3-3M14 5l5 5M15 6 5 16l3 3L18 9M5 16l-2 5 5-2M10 11l2 2M13 8l2 2" />
+                  </svg>
+                  <span>Immunization Records</span>
                 </button>
-                <button className="outlineButton" onClick={print}>
-                  Generate prescription
+                <button
+                  type="button"
+                  title="Diagnoses"
+                  className={section === "Diagnoses" ? "active" : ""}
+                  aria-pressed={section === "Diagnoses"}
+                  onClick={() => setSection("Diagnoses")}
+                >
+                  <svg
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect x="5" y="4" width="14" height="17" rx="2" />
+                    <rect x="9" y="2" width="6" height="4" rx="1" />
+                    <path d="M9 12h6M12 9v6M9 18h6" />
+                  </svg>
+                  <span>Diagnoses</span>
                 </button>
-                <button className="primary" onClick={save}>
-                  Complete consultation
-                </button>
+              </nav>
+              <div className="patientRecordMain">
+                <nav className="opdSteps">
+                  {[
+                    "Vitals",
+                    "Clinical notes",
+                    "Diagnoses",
+                    "Medication",
+                    "Visit history",
+                    "Immunization Records",
+                    ...(growthEligible ? ["Growth Chart"] : []),
+                  ].map((item) => (
+                    <button
+                      className={section === item ? "active" : ""}
+                      onClick={() => setSection(item)}
+                      key={item}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </nav>
+                <div className="opdContent">
+                  {patientLookupError && (
+                    <p role="alert">{patientLookupError}</p>
+                  )}
+                  {section === "Growth Chart" && growthEligible && (
+                    <PatientGrowthChart
+                      patient={patient}
+                      visit={active}
+                      readings={form.vitalHistory}
+                      history={history.filter(
+                        (visit) => visit.patientId === active.patientId,
+                      )}
+                      onRecord={() => setSection("Vitals")}
+                    />
+                  )}
+                  <div hidden={section !== "Immunization Records"}>
+                    <ImmunizationRecords
+                      key={active._id}
+                      visit={active}
+                      patient={patient}
+                      onSaved={(immunizations) => {
+                        setActive((current) => ({ ...current, immunizations }));
+                        setVisits((current) =>
+                          current.map((item) =>
+                            item._id === active._id
+                              ? { ...item, immunizations }
+                              : item,
+                          ),
+                        );
+                      }}
+                    />
+                  </div>
+                  <div hidden={section !== "AI Features"}>
+                    <ConsultationAIFeatures
+                      key={active._id}
+                      onAddNotes={(text) => {
+                        setForm((current) => ({
+                          ...current,
+                          notes: "",
+                          clinicalNotes: [
+                            ...current.clinicalNotes,
+                            ...(current.notes.trim() &&
+                            !current.clinicalNotes.includes(
+                              current.notes.trim(),
+                            )
+                              ? [current.notes.trim()]
+                              : []),
+                            text,
+                          ],
+                        }));
+                        setSection("Clinical notes");
+                      }}
+                    />
+                  </div>
+                  {section === "Vitals" && (
+                    <section className="opdSection">
+                      <h3>
+                        Vitals <span>Record current measurements</span>
+                      </h3>
+                      {growthEligible && (
+                        <p>
+                          For growth graphs, enter age in months, weight,
+                          height/length and head circumference, then add a vital
+                          reading. Z-scores must be verified against a named
+                          reference.
+                        </p>
+                      )}
+                      {growthEligible && (
+                        <label>
+                          Z-score indicator
+                          <select
+                            value={form.growthMetric}
+                            onChange={(event) =>
+                              set("growthMetric")(event.target.value)
+                            }
+                          >
+                            <option value="weight">Weight-for-age</option>
+                            <option value="height">
+                              Height/length-for-age
+                            </option>
+                            <option value="bmi">BMI-for-age</option>
+                            <option value="head">
+                              Head circumference-for-age
+                            </option>
+                            <option value="weightHeight">
+                              Weight-for-height
+                            </option>
+                          </select>
+                        </label>
+                      )}
+                      {growthError && <p role="alert">{growthError}</p>}
+                      <div className="vitalsGrid">
+                        {vitalFields.map(([name, label]) => (
+                          <label key={name}>
+                            {label}
+                            <input
+                              value={form[name]}
+                              onChange={(event) =>
+                                set(name)(event.target.value)
+                              }
+                              inputMode={
+                                name === "growthReference" ? "text" : "decimal"
+                              }
+                            />
+                          </label>
+                        ))}
+                      </div>
+                      <button
+                        className="outlineButton addEntryButton"
+                        type="button"
+                        onClick={addVitalReading}
+                      >
+                        Add vital reading
+                      </button>
+                      {!!form.vitalHistory.length && (
+                        <div className="entryList">
+                          {form.vitalHistory.map((vital, index) => (
+                            <span key={index}>
+                              Reading {index + 1}: {vital.temperature || "—"}°F
+                              · Pulse {vital.pulse || "—"} · BP{" "}
+                              {vital.systolic || "—"}/{vital.diastolic || "—"}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  )}
+                  {section === "Diagnoses" && (
+                    <section className="opdSection">
+                      <h3>Diagnoses</h3>
+                      <p>
+                        Add diagnoses for this consultation. They are saved when
+                        you complete the consultation.
+                      </p>
+                      <div className="clinicalGrid">
+                        <label>
+                          Diagnosis
+                          <div className="entryInput">
+                            <textarea
+                              value={form.diagnosis}
+                              onChange={(event) =>
+                                set("diagnosis")(event.target.value)
+                              }
+                            />
+                            <button
+                              className="outlineButton"
+                              type="button"
+                              onClick={() =>
+                                addTextEntry("diagnosis", "diagnoses")
+                              }
+                            >
+                              Add
+                            </button>
+                          </div>
+                          <div className="entryList">
+                            {form.diagnoses.map((item, index) => (
+                              <span key={index}>
+                                {item}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    removeEntry("diagnoses", index)
+                                  }
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </label>
+                      </div>
+                    </section>
+                  )}
+                  {section === "Clinical notes" && (
+                    <section className="opdSection">
+                      <h3>Clinical assessment</h3>
+                      <div className="clinicalGrid">
+                        <label>
+                          Chief complaint
+                          <div className="entryInput">
+                            <textarea
+                              value={form.chiefComplaint}
+                              onChange={(event) =>
+                                set("chiefComplaint")(event.target.value)
+                              }
+                            />
+                            <button
+                              className="outlineButton"
+                              type="button"
+                              onClick={() =>
+                                addTextEntry(
+                                  "chiefComplaint",
+                                  "chiefComplaints",
+                                )
+                              }
+                            >
+                              Add
+                            </button>
+                          </div>
+                          <div className="entryList">
+                            {form.chiefComplaints.map((item, index) => (
+                              <span key={index}>
+                                {item}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    removeEntry("chiefComplaints", index)
+                                  }
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </label>
+                        <label>
+                          Diagnosis
+                          <div className="entryInput">
+                            <textarea
+                              value={form.diagnosis}
+                              onChange={(event) =>
+                                set("diagnosis")(event.target.value)
+                              }
+                            />
+                            <button
+                              className="outlineButton"
+                              type="button"
+                              onClick={() =>
+                                addTextEntry("diagnosis", "diagnoses")
+                              }
+                            >
+                              Add
+                            </button>
+                          </div>
+                          <div className="entryList">
+                            {form.diagnoses.map((item, index) => (
+                              <span key={index}>
+                                {item}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    removeEntry("diagnoses", index)
+                                  }
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </label>
+                        <label>
+                          Allergies
+                          <div className="allergyEntry">
+                            <input
+                              value={form.allergy}
+                              onChange={(event) =>
+                                set("allergy")(event.target.value)
+                              }
+                              onKeyDown={(event) =>
+                                event.key === "Enter" &&
+                                (event.preventDefault(), addAllergy())
+                              }
+                              placeholder="Add allergy"
+                            />
+                            <button
+                              className="outlineButton"
+                              type="button"
+                              onClick={addAllergy}
+                            >
+                              Add
+                            </button>
+                          </div>
+                          <div className="allergyChips">
+                            {form.allergies.map((allergy) => (
+                              <span className="allergyChip" key={allergy}>
+                                {allergy}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setForm((current) => ({
+                                      ...current,
+                                      allergies: current.allergies.filter(
+                                        (item) => item !== allergy,
+                                      ),
+                                    }))
+                                  }
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </label>
+                        <label>
+                          Clinical notes
+                          <div className="entryInput">
+                            <textarea
+                              value={form.notes}
+                              onChange={(event) =>
+                                set("notes")(event.target.value)
+                              }
+                            />
+                            <button
+                              className="outlineButton"
+                              type="button"
+                              onClick={() =>
+                                addTextEntry("notes", "clinicalNotes")
+                              }
+                            >
+                              Add
+                            </button>
+                          </div>
+                          <div className="entryList">
+                            {form.clinicalNotes.map((item, index) => (
+                              <span key={index}>
+                                {item}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    removeEntry("clinicalNotes", index)
+                                  }
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </label>
+                      </div>
+                    </section>
+                  )}
+                  {section === "Medication" && (
+                    <section className="opdSection">
+                      <h3>Medication</h3>
+                      <div className="medicineGrid">
+                        <label>
+                          Medicine name
+                          <input
+                            value={form.medicine}
+                            onChange={(event) =>
+                              set("medicine")(event.target.value)
+                            }
+                            placeholder="e.g. Paracetamol 500mg"
+                          />
+                        </label>
+                        <label>
+                          Dosage
+                          <input
+                            value={form.dosage}
+                            onChange={(event) =>
+                              set("dosage")(event.target.value)
+                            }
+                            placeholder="e.g. 1 tablet twice daily"
+                          />
+                        </label>
+                        <label>
+                          Days
+                          <input
+                            type="number"
+                            min="1"
+                            value={form.days}
+                            onChange={(event) =>
+                              set("days")(event.target.value)
+                            }
+                          />
+                        </label>
+                      </div>
+                      <button
+                        className="outlineButton addEntryButton"
+                        type="button"
+                        onClick={addMedication}
+                      >
+                        Add medication
+                      </button>
+                      <div className="entryList">
+                        {form.medicineEntries.map((medicine, index) => (
+                          <span key={index}>
+                            {medicine.name} · {medicine.dosage || "No dosage"} ·{" "}
+                            {medicine.days} day(s)
+                            <button
+                              type="button"
+                              onClick={() =>
+                                removeEntry("medicineEntries", index)
+                              }
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                  {section === "Visit history" && (
+                    <section className="opdSection">
+                      <h3>Recent visit history</h3>
+                      <div className="visitHistory">
+                        {history.length ? (
+                          history.map((visit) => (
+                            <div className="visitHistoryItem" key={visit._id}>
+                              <b>
+                                {visit.diagnosis ||
+                                  visit.chiefComplaint ||
+                                  visit.symptoms}
+                              </b>
+                              <small>
+                                {new Date(visit.createdAt).toLocaleDateString()}{" "}
+                                · {visit.status} · {visit.doctor}
+                              </small>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="empty">
+                            No earlier visits recorded.
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  )}
+                  <div className="consultActions">
+                    <button
+                      className="outlineButton"
+                      onClick={() => selectPatient(active)}
+                    >
+                      Reset
+                    </button>
+                    <button className="outlineButton" onClick={print}>
+                      Generate prescription
+                    </button>
+                    <button className="primary" onClick={save}>
+                      Complete consultation
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </>

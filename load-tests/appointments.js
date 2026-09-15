@@ -1,7 +1,7 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 
-const baseUrl = __ENV.BASE_URL || "https://w9wngclh-5000.inc1.devtunnels.ms/api";
+const baseUrl = __ENV.BASE_URL || "http://localhost:5000/api";
 
 export const options = {
   scenarios: {

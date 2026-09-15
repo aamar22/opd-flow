@@ -247,3 +247,274 @@
     flex-direction: column;
   }
 }
+
+.consultationOCR {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fbfc;
+}
+.consultationOCR h4 {
+  margin: 0;
+  font-size: 15px;
+}
+.consultationOCR p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+.consultationOCR input[hidden] {
+  display: none;
+}
+.consultationOCR .outlineButton {
+  padding: 10px 14px;
+}
+.consultationOCR button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.consultationOCR .ocrError {
+  color: #b54742;
+}
+.ocrFilename {
+  overflow-wrap: anywhere;
+}
+.ocrText {
+  margin-top: 18px;
+}
+.opdPatientBar .visitFullActions {
+  flex-wrap: wrap;
+}
+
+.patientRecordLayout {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 18px;
+  width: min(1320px, calc(100% - 36px));
+  margin: 24px auto 45px;
+  align-items: start;
+}
+.patientRecordSidebar {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px;
+}
+.patientRecordSidebar button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border: 0;
+  border-radius: 7px;
+  padding: 15px 5px;
+  background: transparent;
+  color: #526678;
+  font:
+    600 12px "DM Sans",
+    sans-serif;
+  cursor: pointer;
+}
+.patientRecordSidebar button:hover,
+.patientRecordSidebar button.active {
+  background: #dff2f0;
+  color: #0d817b;
+}
+.patientRecordSidebar button:focus-visible {
+  outline: 2px solid #149f97;
+  outline-offset: 2px;
+}
+.patientRecordMain {
+  min-width: 0;
+}
+.opdConsultation.consultOpen .patientRecordMain .opdSteps,
+.opdConsultation.consultOpen .patientRecordMain .opdContent {
+  width: 100%;
+  margin: 0;
+}
+.patientGrowthChart > p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+.growthPlot {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  margin: 20px 0;
+}
+.growthPlot text {
+  fill: #526678;
+  font:
+    12px "DM Sans",
+    sans-serif;
+}
+.growthTableWrap {
+  overflow-x: auto;
+  margin-bottom: 18px;
+}
+.growthTableWrap caption {
+  text-align: left;
+  padding: 12px 0;
+  font-weight: 600;
+}
+@media (max-width: 620px) {
+  .patientRecordLayout {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 8px;
+    width: calc(100% - 16px);
+    margin-top: 12px;
+  }
+  .patientRecordSidebar {
+    padding: 4px;
+  }
+  .patientRecordSidebar button {
+    font-size: 11px;
+    padding: 12px 2px;
+  }
+  .patientRecordMain .opdContent {
+    padding: 16px 12px;
+  }
+  .patientRecordMain .vitalsGrid {
+    grid-template-columns: 1fr;
+  }
+  .patientRecordMain .consultActions {
+    flex-wrap: wrap;
+  }
+}
+
+.growthGraphCard {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  margin: 20px 0;
+  background: #fff;
+}
+.growthGraphCard h4 {
+  margin: 0;
+  font-size: 15px;
+}
+.growthGraphScroll {
+  overflow-x: auto;
+}
+.growthGraphCard .growthPlot {
+  min-width: 580px;
+  max-height: none;
+  aspect-ratio: 740 / 380;
+  margin: 12px 0 0;
+}
+.growthGraphHint {
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+.growthMeasurements {
+  margin-bottom: 20px;
+}
+.growthMeasurements summary {
+  cursor: pointer;
+  color: #087f78;
+  padding: 10px 0;
+  font-weight: 600;
+}
+
+.patientRecordLayout.withoutGrowthSidebar {
+  grid-template-columns: minmax(0, 1fr);
+}
+.pediatricGrowthGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 20px;
+  align-items: start;
+}
+.pediatricGrowthGrid .growthGraphCard {
+  margin: 0;
+}
+.pediatricGrowthGrid .growthPlot {
+  min-width: 460px;
+}
+.growthIndicatorSelect {
+  margin-bottom: 10px;
+}
+@media (max-width: 1050px) {
+  .pediatricGrowthGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.pediatricGrowthGrid .growthGraphCard {
+  border-top: 4px solid var(--graph-color);
+  background: linear-gradient(160deg, var(--graph-tint), #fff 65%);
+  box-shadow: 0 3px 12px #16273a08;
+}
+.pediatricGrowthGrid .growthGraphCard h4 {
+  color: var(--graph-color);
+}
+.pediatricGrowthGrid .growthGraphCard h4::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--graph-color);
+  margin-right: 8px;
+}
+.pediatricGrowthGrid .growthGraphScroll {
+  background: #ffffffb3;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+.pediatricGrowthGrid .growthMeasurements summary {
+  color: var(--graph-color);
+}
+.pediatricGrowthGrid .growthTableWrap th {
+  background: var(--graph-tint);
+  color: var(--graph-color);
+}
+.pediatricGrowthGrid .growthGraphHint {
+  color: #526678;
+}
+
+.immunizationRecords > p {
+  color: #526678;
+  line-height: 1.5;
+}
+.immunizationForm {
+  padding: 20px;
+  border: 1px solid #c7d2fe;
+  border-top: 4px solid #6366f1;
+  border-radius: 12px;
+  background: #f5f7ff;
+  margin: 18px 0 26px;
+}
+.immunizationForm fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.immunizationForm legend {
+  font-weight: 700;
+  color: #4338ca;
+  margin-bottom: 16px;
+}
+.immunizationGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.immunizationTableWrap {
+  overflow-x: auto;
+}
+.immunizationTableWrap td {
+  overflow-wrap: anywhere;
+  min-width: 110px;
+}
+.immunizationRecords [role="alert"] {
+  color: #b42318;
+}
+@media (max-width: 800px) {
+  .immunizationGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -686,6 +686,19 @@ exports.getBillPreview = async (req, res, next) => {
   try {
     const admission = await findAdmission(req.params.id);
     if (!admission) throw new AppError("Admission not found", 404);
+    if (admission.billedAt) {
+      const invoice = (await list(Invoice, "invoices")).find(
+        (item) => String(item._id) === String(admission.invoiceId),
+      );
+      if (!invoice) throw new AppError("Saved IPD invoice not found", 404);
+      return res.json({
+        items: invoice.items,
+        subtotal: invoice.subtotal,
+        advanceTotal: invoice.advancePaid || 0,
+        advances: admission.advances || [],
+        invoice,
+      });
+    }
     res.json(await buildBillPreview(admission));
   } catch (error) {
     next(error);

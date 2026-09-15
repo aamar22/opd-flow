@@ -1,0 +1,27 @@
+.brand.clinavioBrand {
+  display: block;
+  padding: 0;
+  margin: 0 0 28px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f7f7f7;
+}
+
+.clinavioLogo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 850px) {
+  .brand.clinavioBrand {
+    width: 52px;
+    height: 60px;
+  }
+
+  .clinavioLogo {
+    width: 165px;
+    max-width: none;
+    height: 60px;
+  }
+}

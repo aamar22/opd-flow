@@ -1,0 +1,90 @@
+.headerUserArea,
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.headerActions {
+  gap: 8px;
+}
+.headerAction {
+  position: relative;
+}
+.headerAction summary {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+}
+.headerAction summary::-webkit-details-marker {
+  display: none;
+}
+.headerAction summary:hover,
+.headerAction[open] summary {
+  background: #e4f5f3;
+  color: #13867e;
+}
+.headerAction summary:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+}
+.headerAction svg {
+  width: 20px;
+  height: 20px;
+}
+.notificationDot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  background: var(--teal);
+  border-radius: 50%;
+}
+.headerPopover {
+  position: absolute;
+  right: 0;
+  top: 44px;
+  width: min(260px, calc(100vw - 110px));
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px #142b421a;
+  z-index: 20;
+}
+.headerPopover p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.headerPopover button {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: #e4f5f3;
+  color: #13867e;
+  cursor: pointer;
+}
+@media (max-width: 560px) {
+  .app > main > header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .headerUserArea {
+    gap: 8px;
+  }
+}
+
+.headerUserArea > .user {
+  order: 1;
+}
+

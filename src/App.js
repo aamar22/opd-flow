@@ -1,6 +1,10 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import AppShell from "./components/layout/AppShell";
+import { isPageEnabled } from "./constants/modules.mjs";
+const ModuleSettingsPage = lazy(
+  () => import("./pages/admin/ModuleSettingsPage"),
+);
 import {
   clinicSettingsApi,
   dashboardApi,
@@ -40,6 +44,7 @@ const IPDAdmissionsPage = lazy(
 const IPDBillingPage = lazy(() => import("./pages/reception/IPDBillingPage"));
 
 const PAGE_COMPONENTS = {
+  "Module Settings": ModuleSettingsPage,
   Dashboard: DashboardPage,
   "Patient Registration": PatientRegistrationPage,
   Appointments: AppointmentPage,
@@ -73,6 +78,22 @@ export default function App() {
     email: "",
     doctors: [],
   });
+  useEffect(() => {
+    const refresh = () =>
+      clinicSettingsApi
+        .get()
+        .then(({ data }) => setClinicSettings(data))
+        .catch(() =>
+          setNotice("Unable to load module settings. Please retry."),
+        );
+    refresh();
+    window.addEventListener("focus", refresh);
+    const timer = window.setInterval(refresh, 30000);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      window.clearInterval(timer);
+    };
+  }, []);
   const loadData = useCallback(async () => {
     try {
       const [
@@ -115,18 +136,28 @@ export default function App() {
     setNavigationContext(null);
   };
   const handleTabChange = (nextTab) => {
+    if (!isPageEnabled(nextTab, clinicSettings.modules)) return;
+    if (nextTab === "Module Settings" && role !== "Super Admin") return;
     setTab(nextTab);
     setNavigationContext(null);
   };
   const handleNavigate = (nextTab, context = null) => {
+    if (!isPageEnabled(nextTab, clinicSettings.modules)) return;
+    if (nextTab === "Module Settings" && role !== "Super Admin") return;
     setNavigationContext(context);
     setTab(nextTab);
   };
-  const Page = PAGE_COMPONENTS[tab];
+  const activeTab =
+    isPageEnabled(tab, clinicSettings.modules) &&
+    (tab !== "Module Settings" || role === "Super Admin")
+      ? tab
+      : "Dashboard";
+  const Page = PAGE_COMPONENTS[activeTab] || DashboardPage;
   return (
     <AppShell
       role={role}
-      tab={tab}
+      tab={activeTab}
+      modules={clinicSettings.modules}
       notice={notice}
       onRoleChange={handleRoleChange}
       onTabChange={handleTabChange}

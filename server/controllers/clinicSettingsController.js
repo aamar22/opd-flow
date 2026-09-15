@@ -9,6 +9,7 @@ const defaultSettings = {
   address: "",
   phone: "",
   email: "",
+  modules: { opd: true, ipd: true, pharmacy: true },
   doctors: [
     {
       id: "doctor-1",
@@ -59,6 +60,7 @@ exports.getSettings = async (_req, res, next) => {
 };
 exports.updateSettings = async (req, res, next) => {
   try {
+    const { modules: ignoredModules, ...settingsFields } = req.body;
     const doctors = Array.isArray(req.body.doctors)
       ? req.body.doctors.map((doctor, index) => ({
           ...doctor,
@@ -67,8 +69,30 @@ exports.updateSettings = async (req, res, next) => {
       : undefined;
     res.json(
       await saveMaster(ClinicSettings, "clinicSettings", {
-        ...req.body,
+        ...settingsFields,
         ...(doctors ? { doctors } : {}),
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+exports.updateModules = async (req, res, next) => {
+  try {
+    const modules = req.body.modules;
+    const keys = ["opd", "ipd", "pharmacy"];
+    if (
+      !modules ||
+      keys.some((key) => typeof modules[key] !== "boolean") ||
+      Object.keys(modules).some((key) => !keys.includes(key))
+    ) {
+      throw new AppError("Provide boolean OPD, IPD and pharmacy settings", 400);
+    }
+    const existing = await getMaster(ClinicSettings, "clinicSettings");
+    res.json(
+      await saveMaster(ClinicSettings, "clinicSettings", {
+        ...(!existing ? defaultSettings : {}),
+        modules,
       }),
     );
   } catch (error) {

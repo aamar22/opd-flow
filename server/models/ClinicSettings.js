@@ -27,6 +27,11 @@ module.exports = mongoose.model(
       phone: { type: String, default: "" },
       email: { type: String, default: "" },
       doctors: { type: [doctorSchema], default: [] },
+      modules: {
+        opd: { type: Boolean, default: true },
+        ipd: { type: Boolean, default: true },
+        pharmacy: { type: Boolean, default: true },
+      },
     },
     { timestamps: true },
   ),

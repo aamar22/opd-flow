@@ -1,4 +1,5 @@
 export const ROLE_TABS = {
+  "Super Admin": ["Dashboard", "Module Settings"],
   Admin: [
     "Dashboard",
     "Clinic Masters",
@@ -25,6 +26,7 @@ export const ROLE_TABS = {
   ],
 };
 export const USERS = {
+  "Super Admin": "Super Administrator",
   Admin: "Clinic Administrator",
   Reception: "Maya Singh",
   Doctor: "Dr. Ananya Sharma",

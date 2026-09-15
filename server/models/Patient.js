@@ -7,6 +7,7 @@ const schema = new mongoose.Schema(
     gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
     phone: { type: String, required: true, trim: true },
     address: String,
+    dateOfBirth: Date,
   },
   { timestamps: true },
 );

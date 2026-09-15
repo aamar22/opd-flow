@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ipdApi } from "../../services/api";
 
 const emptyCharge = {
@@ -7,7 +7,10 @@ const emptyCharge = {
   amount: "",
 };
 const emptyAdvance = { amount: "", paymentMode: "Cash", reference: "" };
-export default function IPDBillingPage({ onComplete }) {
+export default function IPDBillingPage({ onComplete, clinicSettings }) {
+  const selection = useRef(0);
+  const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState("");
   const [admissions, setAdmissions] = useState([]);
   const [active, setActive] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -21,11 +24,23 @@ export default function IPDBillingPage({ onComplete }) {
     load();
   }, []);
   const selectAdmission = async (admission) => {
+    const request = ++selection.current;
+    setPreview(null);
+    setError("");
     setActive(admission);
     setDiscount("");
     setCharge({ ...emptyCharge, doctor: admission.doctor });
     setAdvance(emptyAdvance);
-    setPreview((await ipdApi.getBillPreview(admission._id)).data);
+    try {
+      const { data } = await ipdApi.getBillPreview(admission._id);
+      if (request !== selection.current) return;
+      setPreview(data);
+      setDiscount(data.invoice?.discount ?? "");
+      setPaymentMode(data.invoice?.paymentMode || "Cash");
+    } catch {
+      if (request === selection.current)
+        setError("Could not load the bill. Select the patient to retry.");
+    }
   };
   const addConsultation = async (event) => {
     event.preventDefault();
@@ -46,14 +61,43 @@ export default function IPDBillingPage({ onComplete }) {
     onComplete("IPD advance payment recorded.");
   };
   const createBill = async () => {
-    await ipdApi.createBill(active._id, {
+    const { data: invoice } = await ipdApi.createBill(active._id, {
       discount: Number(discount) || 0,
       paymentMode,
     });
-    setActive(null);
-    setPreview(null);
+    setActive({
+      ...active,
+      billedAt: invoice.createdAt || new Date().toISOString(),
+      invoiceId: invoice._id,
+    });
+    setPreview({
+      ...preview,
+      items: invoice.items,
+      subtotal: invoice.subtotal,
+      advanceTotal: invoice.advancePaid || 0,
+      invoice,
+    });
     load();
     onComplete("Final IPD bill created successfully.");
+  };
+  const downloadPdf = async () => {
+    setExporting(true);
+    setError("");
+    try {
+      const { downloadIpdBill } =
+        await import("../../utils/downloadIpdBill.mjs");
+      await downloadIpdBill({
+        admission: active,
+        preview,
+        discount: Number(discount) || 0,
+        paymentMode,
+        clinicSettings,
+      });
+    } catch {
+      setError("Could not download the PDF. Please try again.");
+    } finally {
+      setExporting(false);
+    }
   };
   const beforeAdvance = Math.max(
     0,
@@ -103,9 +147,22 @@ export default function IPDBillingPage({ onComplete }) {
           )}
         </section>
         <section className="masterCard ipdBillDetail">
+          {error && <p role="alert">{error}</p>}
           {active && preview ? (
             <>
               <h3>{active.patientName}</h3>
+              <button
+                type="button"
+                className="outlineButton"
+                disabled={exporting}
+                onClick={downloadPdf}
+              >
+                {exporting
+                  ? "Preparing PDF..."
+                  : preview.invoice
+                    ? "Download bill PDF"
+                    : "Download estimate PDF"}
+              </button>
               <span className="masterHint">
                 {active.admissionNumber} · {active.status}
               </span>
@@ -213,14 +270,16 @@ export default function IPDBillingPage({ onComplete }) {
                   ))}
                 </div>
               )}
-              <p className="appliedBillingRule">
-                <b>Applied bed rule:</b>{" "}
-                {preview.billingRules?.calculationMethod === "HighestPerDay"
-                  ? "Highest category per day"
-                  : preview.billingRules?.calculationMethod === "MinimumGrace"
-                    ? `Minimum ${preview.billingRules.minimumHours} hour(s) after ${preview.billingRules.graceMinutes} minute grace`
-                    : "Prorated by exact time"}
-              </p>
+              {preview.billingRules && (
+                <p className="appliedBillingRule">
+                  <b>Applied bed rule:</b>{" "}
+                  {preview.billingRules?.calculationMethod === "HighestPerDay"
+                    ? "Highest category per day"
+                    : preview.billingRules?.calculationMethod === "MinimumGrace"
+                      ? `Minimum ${preview.billingRules.minimumHours} hour(s) after ${preview.billingRules.graceMinutes} minute grace`
+                      : "Prorated by exact time"}
+                </p>
+              )}
               <table>
                 <thead>
                   <tr>
@@ -250,7 +309,7 @@ export default function IPDBillingPage({ onComplete }) {
               </table>
               <div className="billingTotals">
                 <label>
-                  Discount
+                  Amount to be Discount
                   <input
                     type="number"
                     min="0"
