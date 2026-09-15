@@ -36,6 +36,9 @@ exports.createInvoice = async (req, res, next) => {
     const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
     const discount = Number(req.body.discount) || 0;
     const invoice = await create(Invoice, "invoices", {
+      invoiceType: "Service",
+      status: "Paid",
+      paymentMode: "Cash",
       ...req.body,
       invoiceNumber: invoiceNumber(),
       items,

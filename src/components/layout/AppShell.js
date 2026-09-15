@@ -55,6 +55,11 @@ export default function AppShell({
         </div>
       </aside>
       <main>
+        {import.meta.env.VITE_DEMO_MODE === "true" && (
+          <div className="notice" role="status">
+            Demo only ? use fictional patients. Records reset when the server restarts.
+          </div>
+        )}
         <header>
           <div>
             <p className="eyebrow">{role.toUpperCase()} PORTAL</p>

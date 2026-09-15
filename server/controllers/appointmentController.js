@@ -98,8 +98,9 @@ exports.createAppointment = async (req, res, next) => {
       throw new AppError("This appointment time has already been booked", 409);
     req.body.department = doctor.department;
     const [appointment] = await Promise.all([
-      create(Appointment, "appointments", req.body),
+      create(Appointment, "appointments", { status: "Scheduled", ...req.body }),
       create(Visit, "visits", {
+        status: "Waiting",
         patientId: req.body.patientId,
         patientName: req.body.patientName,
         doctor: req.body.doctor,

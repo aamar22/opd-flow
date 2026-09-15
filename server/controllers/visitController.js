@@ -56,7 +56,7 @@ exports.getVisits = async (req, res, next) => {
 };
 exports.createVisit = async (req, res, next) => {
   try {
-    const visit = await create(Visit, "visits", req.body);
+    const visit = await create(Visit, "visits", { status: "Waiting", ...req.body });
     emitDashboardUpdate();
     res.status(201).json(visit);
   } catch (error) {

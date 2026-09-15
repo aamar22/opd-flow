@@ -120,7 +120,7 @@ export default function App() {
   }, [loadData]);
   useEffect(() => {
     const socket = io(
-      import.meta.env.VITE_SOCKET_URL || "http://localhost:5000",
+      import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? window.location.origin : "http://localhost:5000"),
     );
     socket.on("dashboard:update", setDashboard);
     return () => socket.disconnect();

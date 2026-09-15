@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const patientRoutes = require("./routes/patientRoutes");
 const visitRoutes = require("./routes/visitRoutes");
 const medicineRoutes = require("./routes/medicineRoutes");
@@ -26,6 +27,15 @@ app.use("/api/clinic-settings", clinicSettingsRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/ipd", ipdRoutes);
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+if (process.env.NODE_ENV === "production") {
+  const clientPath = path.join(__dirname, "../dist");
+  app.use(express.static(clientPath));
+  app.get("*", (req, res, next) => {
+    if (req.path === "/api" || req.path.startsWith("/api/")) return next();
+    res.sendFile(path.join(clientPath, "index.html"));
+  });
+}
 app.use(notFound);
 app.use(errorHandler);
 module.exports = app;

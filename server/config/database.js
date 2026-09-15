@@ -1,5 +1,9 @@
 const mongoose = require("mongoose");
 module.exports = async function connectDatabase() {
+  if (process.env.DEMO_MODE === "true") {
+    console.log("Demo mode: temporary in-memory data; no database connection.");
+    return;
+  }
   try {
     await mongoose.connect(
       process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/opd_flow",

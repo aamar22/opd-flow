@@ -2,6 +2,8 @@
   "name": "opd-flow",
   "private": true,
   "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test tests",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node --watch server/index.js",
     "client": "vite --host 0.0.0.0",
