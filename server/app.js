@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const mongoose = require("mongoose");
 const path = require("path");
 const patientRoutes = require("./routes/patientRoutes");
 const visitRoutes = require("./routes/visitRoutes");
@@ -18,6 +19,12 @@ app.use(cors());
 app.use(express.json());
 app.use(metricsMiddleware);
 app.get("/metrics", metricsHandler);
+app.use("/api", (_req, res, next) => {
+  if (process.env.NODE_ENV === "production" && process.env.DEMO_MODE !== "true" && mongoose.connection.readyState !== 1) {
+    return res.status(503).json({ message: "Database unavailable. Please try again shortly." });
+  }
+  next();
+});
 app.use("/api/patients", patientRoutes);
 app.use("/api/visits", visitRoutes);
 app.use("/api/medicines", medicineRoutes);

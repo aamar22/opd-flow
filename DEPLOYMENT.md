@@ -20,3 +20,24 @@ settings, set MONGODB_URI, disable DEMO_MODE, and verify database connectivity a
 backup requirements. Never commit database credentials.
 
 Local checks: npm test and npm run build. Local development: npm run dev.
+
+## Connect MongoDB Atlas to the existing Render service
+
+1. Create a Free Atlas cluster and a database user with readWrite access to clinavio.
+2. In Render, open the service Connect menu and copy all Outbound IP ranges.
+   Add those ranges to the Atlas project Network Access IP access list.
+3. In Atlas choose Connect > Drivers > Node.js and copy the connection string.
+   Set its database path to /clinavio before the query string. Replace credential
+   placeholders and URL-encode special characters in the username and password.
+4. In Render Environment, set MONGODB_URI to that private connection string,
+   DEMO_MODE to false, and VITE_DEMO_MODE to false. Save, rebuild, and deploy.
+   Do not place MONGODB_URI in any VITE_ variable or GitHub file.
+5. Confirm the runtime log says MongoDB connected. Create a fictional patient,
+   restart the service, and confirm the patient remains and appears in Atlas.
+
+The repository Blueprint defaults to a temporary demo for new deployments. Keep
+these Atlas overrides in the existing service when reviewing future Blueprint syncs.
+Existing in-memory demo records are not migrated. Production startup now stops if
+Atlas is unavailable; API requests receive 503 if the connection drops later.
+Atlas persistence does not add login protection: continue using fictional patients
+until server-side authentication and authorization are implemented.

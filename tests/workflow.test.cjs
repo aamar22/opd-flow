@@ -1,6 +1,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { once } = require("node:events");
+// Always isolate HTTP tests from the hosting environment and real database.
+process.env.NODE_ENV = "test";
 const app = require("../server/app");
 
 test("patient registration through appointment, consultation, and billing", async (t) => {
