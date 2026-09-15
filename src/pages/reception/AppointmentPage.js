@@ -5,7 +5,7 @@ import {
   patientApi,
 } from "../../services/api";
 import Pagination from "../../components/common/Pagination";
-import { printPrescription as printSharedPrescription } from "../../utils/printPrescription";
+import { appointmentPrintHtml } from "../../utils/appointmentPrint.mjs";
 
 const today = new Date().toISOString().slice(0, 10);
 const initialForm = {
@@ -27,85 +27,6 @@ const emptyManualPatient = {
   address: "",
 };
 const APPOINTMENTS_PER_PAGE = 5;
-
-const escapePrintValue = (value) =>
-  String(value ?? "—")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-
-const printPrescription = (appointment, patient, clinicSettings) => {
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) return;
-  printWindow.opener = null;
-  printWindow.document
-    .write(`<!doctype html><html><head><title>OPD Prescription</title><style>
-    @page{size:A4;margin:10mm}*{box-sizing:border-box}body{margin:0;color:#151515;font:11px Arial,sans-serif}main{width:190mm;min-height:277mm;margin:auto}.clinic-header{min-height:24mm;display:flex;align-items:center;gap:10px;border-bottom:1px solid #aaa;padding:2mm 3mm}.clinic-header img{width:23mm;height:20mm;object-fit:contain}.clinic-name{color:#213b80;font-size:24px;font-weight:800;line-height:1;text-transform:uppercase}.clinic-subtitle{font-size:12px;font-weight:700}.clinic-contact{margin-left:auto;color:#555;font-size:9px;line-height:1.6;text-align:right}h1{font-size:13px;text-align:center;margin:16mm 0 4mm}.patient-area{display:grid;grid-template-columns:1.45fr 1fr;gap:12mm;padding:0 2mm 6mm;font-size:10px;line-height:1.55}.patient-area b{display:inline-block;min-width:28mm;font-size:9px}.patient-area span{font-weight:600}.rx-box{border:1.5px solid #222;min-height:190mm;padding:3mm 5mm}.rx-title{font-family:cursive;font-size:14px}.rx-note{margin-top:7mm;line-height:1.6;color:#333;white-space:pre-wrap}.signature{margin-top:120mm;text-align:right;font-size:10px}footer{border-top:1px solid #aaa;padding-top:3mm;font-size:8px;color:#666;display:flex;justify-content:space-between}
-    </style></head><body><main><div class="clinic-header">${clinicSettings.logoUrl ? `<img src="${escapePrintValue(clinicSettings.logoUrl)}" alt="Clinic logo">` : ""}<div><div class="clinic-name">${escapePrintValue(clinicSettings.clinicName)}</div><div class="clinic-subtitle">OPD &amp; PRESCRIPTION SERVICES</div></div><div class="clinic-contact">${escapePrintValue(clinicSettings.address || "Clinic address")}<br>${escapePrintValue(clinicSettings.phone || "Phone")}</div></div><h1>OPD PRESCRIPTION</h1><section class="patient-area"><div><div><b>UHID NO.</b><span>: ${escapePrintValue(appointment.patientId)}</span></div><div><b>PATIENT NAME</b><span>: ${escapePrintValue(appointment.patientName)}</span></div><div><b>AGE / SEX</b><span>: ${escapePrintValue(patient ? `${patient.age || "—"} / ${patient.gender || "—"}` : "—")}</span></div><div><b>MOB. NO.</b><span>: ${escapePrintValue(patient?.phone)}</span></div><div><b>DEPARTMENT</b><span>: ${escapePrintValue(appointment.department)}</span></div><div><b>ADDRESS</b><span>: ${escapePrintValue(patient?.address)}</span></div></div><div><div><b>OPD DATE</b><span>: ${escapePrintValue(appointment.appointmentDate)}</span></div><div><b>CATEGORY</b><span>: ${escapePrintValue(appointment.appointmentType)}</span></div><div><b>STATUS</b><span>: ${escapePrintValue(appointment.status)}</span></div><div><b>DOCTOR</b><span>: ${escapePrintValue(appointment.doctor)}</span></div><div><b>TIME</b><span>: ${escapePrintValue(appointment.appointmentTime)}</span></div></div></section><section class="rx-box"><div class="rx-title">Rx</div><div class="rx-note">${escapePrintValue(appointment.reason || "")}</div><div class="signature">Doctor signature<br><br>________________________</div></section><footer><span>Generated from ${escapePrintValue(clinicSettings.clinicName)}</span><span>Please carry this prescription for your consultation.</span></footer></main><script>window.onload=()=>window.print()<\/script></body></html>`);
-  printWindow.document.close();
-  return;
-
-  const detail = (label, value) =>
-    `<div><b>${label}</b><span>: ${escapePrintValue(value)}</span></div>`;
-  const departments = [
-    "Casualty / Emergency",
-    "General Medicine",
-    "T.B. & Chest",
-    "Dermatology",
-    "Psychiatry",
-    "Paediatrics",
-    "General Surgery",
-    "Orthopaedics",
-    "Ophthalmology",
-    "ENT",
-    "Obst. & Gynaecology",
-    "Dental",
-  ];
-  printWindow.document
-    .write(`<!doctype html><html><head><title>OPD Prescription - ${escapePrintValue(appointment.patientName)}</title><style>
-    @page{size:A4;margin:10mm}*{box-sizing:border-box}body{margin:0;color:#151515;font:11px Arial,sans-serif}main{width:190mm;min-height:277mm;margin:auto}.clinic-header{min-height:24mm;display:flex;align-items:center;gap:10px;border-bottom:1px solid #aaa;padding:2mm 3mm}.clinic-header img{width:23mm;height:20mm;object-fit:contain}.clinic-name{color:#213b80;font-size:24px;font-weight:800;line-height:1;text-transform:uppercase}.clinic-subtitle{font-size:12px;font-weight:700}.clinic-contact{margin-left:auto;color:#555;font-size:9px;line-height:1.6;text-align:right}h1{font-size:13px;text-align:center;margin:16mm 0 4mm}.patient-area{display:grid;grid-template-columns:1.45fr 1fr;gap:12mm;padding:0 2mm 6mm;font-size:10px;line-height:1.55}.patient-area b{display:inline-block;min-width:28mm;font-size:9px}.patient-area span{font-weight:600}.rx-box{display:grid;grid-template-columns:64mm 1fr;border:1.5px solid #222;min-height:190mm}.department-list{border-right:1.5px solid #222;padding:25mm 2mm 4mm;display:flex;flex-direction:column;gap:7mm;font-size:10px;text-transform:uppercase}.department-list .selected{font-weight:800;text-decoration:underline}.rx-area{padding:3mm 5mm}.rx-title{font-family:cursive;font-size:14px}.rx-note{margin-top:7mm;line-height:1.6;color:#333}.signature{margin-top:120mm;text-align:right;font-size:10px}footer{border-top:1px solid #aaa;padding-top:3mm;font-size:8px;color:#666;display:flex;justify-content:space-between}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-    </style></head><body><main><div class="clinic-header">${clinicSettings.logoUrl ? `<img src="${escapePrintValue(clinicSettings.logoUrl)}" alt="Clinic logo">` : ""}<div><div class="clinic-name">${escapePrintValue(clinicSettings.clinicName)}</div><div class="clinic-subtitle">OPD &amp; PRESCRIPTION SERVICES</div></div><div class="clinic-contact">${escapePrintValue(clinicSettings.address || "Clinic address")}<br>${escapePrintValue(clinicSettings.phone || "Phone: —")}<br>${escapePrintValue(clinicSettings.email || "")}</div></div><h1>OPD PRESCRIPTION</h1><section class="patient-area"><div>${detail("UHID NO.", appointment.patientId)}${detail("PATIENT NAME", appointment.patientName)}${detail("GUARDIAN NAME", patient?.guardianName || "—")}${detail("AGE / SEX", patient ? `${patient.age || "—"} / ${patient.gender || "—"}` : "—")}${detail("MOB. NO.", patient?.phone)}${detail("DEPARTMENT", appointment.department)}${detail("ADDRESS", patient?.address)}</div><div>${detail("OPD DATE", appointment.appointmentDate)}${detail("CATEGORY", appointment.appointmentType)}${detail("REG. DATE", appointment.appointmentDate)}${detail("STATUS", appointment.status)}${detail("DOCTOR", appointment.doctor)}${detail("TIME", `${appointment.appointmentTime}${appointment.endTime ? ` – ${appointment.endTime}` : ""}`)}</div></section><section class="rx-box"><aside class="department-list">${departments.map((department) => `<span class="${department.toLowerCase() === String(appointment.department).toLowerCase() ? "selected" : ""}">${escapePrintValue(department)}</span>`).join("")}</aside><article class="rx-area"><div class="rx-title">Rx</div><p class="rx-note">${escapePrintValue(appointment.reason || "")}</p><div class="signature">Doctor signature<br><br>________________________</div></article></section><footer><span>Generated from ${escapePrintValue(clinicSettings.clinicName)}</span><span>Please carry this prescription for your consultation.</span></footer></main><script>window.onload=()=>window.print()<\/script></body></html>`);
-  printWindow.document.close();
-  return;
-
-  const field = (label, value) => `
-    <div class="field"><span>${label}</span><strong>${escapePrintValue(value)}</strong></div>
-  `;
-  const patientDetails = [
-    field("Patient name", appointment.patientName),
-    field("UHID", appointment.patientId),
-    field("Mobile", patient?.phone),
-    field(
-      "Age / gender",
-      patient ? `${patient.age || "—"} years / ${patient.gender || "—"}` : "—",
-    ),
-    field("Address", patient?.address),
-  ].join("");
-
-  printWindow.document.write(`<!doctype html>
-    <html><head><title>Prescription - ${escapePrintValue(appointment.patientName)}</title>
-    <style>
-      * { box-sizing: border-box; } body { margin: 0; color: #16273a; font: 14px Arial, sans-serif; }
-      main { max-width: 760px; margin: 32px auto; padding: 30px; border: 1px solid #dbe4ea; }
-      header { display: flex; justify-content: space-between; border-bottom: 2px solid #1769e0; padding-bottom: 18px; } .clinic { display:flex; gap:10px; align-items:center; } .clinic img { width:48px; height:48px; object-fit:contain; }
-      h1 { margin: 0 0 4px; font-size: 25px; } h2 { font-size: 15px; margin: 25px 0 10px; }
-      p { margin: 3px 0; color: #617184; } .label { color: #1769e0; font-size: 11px; font-weight: bold; letter-spacing: 1px; }
-      .grid { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #dbe4ea; border-radius: 6px; overflow: hidden; }
-      .field { padding: 11px 13px; border-bottom: 1px solid #e7edf1; } .field span { display: block; color: #718092; font-size: 11px; margin-bottom: 4px; } .field strong { font-size: 13px; }
-      .summary { background: #f5f9ff; padding: 15px; border-left: 4px solid #1769e0; line-height: 1.6; }
-      footer { margin-top: 46px; display: flex; justify-content: space-between; color: #718092; font-size: 12px; }
-      @media print { main { margin: 0; border: 0; } }
-    </style></head><body><main>
-      <header><div class="clinic">${clinicSettings.logoUrl ? `<img src="${escapePrintValue(clinicSettings.logoUrl)}" alt="" />` : ""}<div><div class="label">${escapePrintValue(clinicSettings.clinicName)}</div><h1>Prescription / Appointment Summary</h1><p>Please present this document at the clinic.</p></div></div><div><div class="label">APPOINTMENT DATE</div><strong>${escapePrintValue(appointment.appointmentDate)}</strong><p>${escapePrintValue(appointment.appointmentTime)}${appointment.endTime ? ` - ${escapePrintValue(appointment.endTime)}` : ""}</p></div></header>
-      <h2>Patient details</h2><section class="grid">${patientDetails}</section>
-      <h2>Consultation</h2><section class="grid">${field("Consulting doctor", appointment.doctor)}${field("Department", appointment.department)}${field("Appointment type", appointment.appointmentType)}${field("Status", appointment.status === "Cancelled" ? "Cancelled" : "Booked")}</section>
-      <h2>Notes</h2><div class="summary">${escapePrintValue(appointment.reason || "No notes provided.")}</div>
-      <footer><span>Generated from OPD Flow</span><span>Doctor signature: ____________________</span></footer>
-    </main><script>window.onload = () => { window.print(); }<\/script></body></html>`);
-  printWindow.document.close();
-};
 
 export default function AppointmentPage({ onComplete, clinicSettings }) {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -262,13 +183,39 @@ export default function AppointmentPage({ onComplete, clinicSettings }) {
     setReloadKey((value) => value + 1);
     onComplete("Appointment cancelled.");
   };
-  const print = (appointment) => {
-    printSharedPrescription({
-      visit: appointment,
-      patient:
-        selectedPatient?._id === appointment.patientId ? selectedPatient : null,
-      clinicSettings,
-    });
+  const print = async (appointment) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      onComplete("Allow pop-ups to print the outpatient sheet.");
+      return;
+    }
+    printWindow.opener = null;
+    printWindow.document.body.textContent = "Preparing outpatient sheet...";
+    try {
+      const { data } = await patientApi.getPage({ patientId: appointment.patientId, limit: 1 });
+      const patient = data.items.find((item) =>
+        String(item._id) === String(appointment.patientId) || item.patientId === appointment.patientId,
+      );
+      if (!patient) throw new Error("Patient record not found");
+      if (printWindow.closed) return;
+      printWindow.document.open();
+      printWindow.document.write(appointmentPrintHtml({ appointment, patient, clinicSettings }));
+      printWindow.document.close();
+      await Promise.all(Array.from(printWindow.document.images).map((image) =>
+        image.complete ? Promise.resolve() : new Promise((resolve) => {
+          image.onload = resolve;
+          image.onerror = resolve;
+          setTimeout(resolve, 3000);
+        }),
+      ));
+      if (!printWindow.closed) {
+        printWindow.focus();
+        printWindow.print();
+      }
+    } catch {
+      if (!printWindow.closed) printWindow.document.body.textContent = "Unable to load the patient record. Close this tab and try printing again.";
+      onComplete("Could not prepare the outpatient sheet. Please try again.");
+    }
   };
 
   return (
@@ -347,8 +294,8 @@ export default function AppointmentPage({ onComplete, clinicSettings }) {
                         type="button"
                         className="printPrescriptionButton"
                         onClick={() => print(appointment)}
-                        aria-label={`Print prescription for ${appointment.patientName}`}
-                        title="Print prescription / save as PDF"
+                        aria-label={`Print outpatient sheet for ${appointment.patientName}`}
+                        title="Print outpatient sheet / save as PDF"
                       >
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                           <path d="M6 9V3h12v6M6 18H4V10a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8h-2M6 14h12v7H6zM8 11h.01" />
